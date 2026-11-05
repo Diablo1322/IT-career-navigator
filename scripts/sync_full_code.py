@@ -1,4 +1,7 @@
-"""Выгрузка бэкенда и аналитики из рабочего репозитория в общий (папка full_code/).
+"""Выгрузка бэкенда и аналитики из рабочего репозитория в общий.
+
+Клон общего репозитория лежит рядом с рабочим: ../full_code (то есть
+Карьерный_IT_навигатор/full_code рядом с Карьерный_IT_навигатор/Code).
 
 Общий репозиторий: https://github.com/kayeros/IT-career-navigator — там же фронтенд Евгения.
 Скрипт трогает только пути из MANAGED: копирует наши файлы и удаляет внутри этих путей то,
@@ -8,7 +11,7 @@ frontend/ и т. д.) не меняется.
 Запуск из корня рабочего репозитория:
     python scripts/sync_full_code.py            # показать, что изменится
     python scripts/sync_full_code.py --apply    # применить
-Коммит и push в full_code делаются отдельно, после просмотра `git -C full_code status`.
+Коммит и push в ../full_code делаются отдельно, после просмотра `git -C ../full_code status`.
 """
 
 import argparse
@@ -19,7 +22,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DEST = ROOT / "full_code"
+DEST = ROOT.parent / "full_code"
 
 # Папки и файлы, которыми владеет рабочий репозиторий (бэкенд, аналитика, контракт, документация).
 MANAGED = [
@@ -59,9 +62,10 @@ def main() -> None:
     args = parser.parse_args()
 
     if not (DEST / ".git").is_dir():
-        sys.exit("нет full_code/ — сначала: git clone https://github.com/kayeros/IT-career-navigator.git full_code")
+        sys.exit(f"нет {DEST} — сначала в папке {ROOT.parent} выполните:\n"
+                 "  git clone https://github.com/kayeros/IT-career-navigator.git full_code")
 
-    src = {f for f in git_files(ROOT) if managed(f) and not f.startswith("full_code/")}
+    src = {f for f in git_files(ROOT) if managed(f)}
     dst = {f for f in git_files(DEST) if managed(f)}
 
     added = sorted(src - dst)
@@ -81,7 +85,7 @@ def main() -> None:
         shutil.copy2(ROOT / f, DEST / f)
     for f in removed:
         (DEST / f).unlink()
-    print("готово; проверьте: git -C full_code status")
+    print(f"готово; проверьте: git -C \"{DEST}\" status")
 
 
 if __name__ == "__main__":
