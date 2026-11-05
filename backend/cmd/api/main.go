@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -43,6 +44,19 @@ func run() error {
 		return err
 	}
 	defer pool.Close()
+
+	if err := db.Migrate(ctx, cfg.DatabaseURL); err != nil {
+		return err
+	}
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "migrate":
+			log.Info("миграции применены")
+			return nil
+		default:
+			return fmt.Errorf("неизвестная команда %q", os.Args[1])
+		}
+	}
 
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddr,
