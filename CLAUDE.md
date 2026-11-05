@@ -51,6 +51,7 @@
 - **Оплата:** СБП через российский платёжный сервис (не выбран). Пока нет юрлица/ИП — подписка на пилоте выдаётся промокодами.
 - **Почта:** сервис не выбран; на этапе 1 письма пишем в лог.
 - **Бэкенд, детали (21.10):** модуль `careernav` в `backend/`; драйвер БД — pgx v5 (`pgxpool`); журнал — стандартный `log/slog` (текст локально, JSON на серверах); конфиг — переменные окружения (`internal/config`), шаблон — `.env.example`, сам `.env` не коммитим.
+- **Репозитории (решение 06.11):** рабочий — `github.com/Diablo1322/IT-career-navigator` (этот, `Code/`): здесь ведём backend и аналитику; фронтенда здесь нет, функционал проверяем демо-страницей `/demo/`. Общий — `github.com/kayeros/IT-career-navigator` (весь проект, там же фронтенд Жени и его прототип `index.html` на GitHub Pages). Клон общего — в `full_code/` (в `.gitignore`). Выгрузка: `python scripts/sync_full_code.py` (предпросмотр) → `--apply` → коммит и push в `full_code`. Скрипт меняет только наши пути (`backend/`, `collector/`, `api/`, `docs/`, `scripts/`, `docker-compose.yml`, `.env.example`, `.gitignore`, `.gitattributes`, `CLAUDE.md`); файлы Жени не трогает и не удаляет. Правки в общем репозитории в наших путях не делаем — только через рабочий и выгрузку.
 - **Локальный запуск:** `cp .env.example .env`, затем `docker compose up --build` (PostgreSQL 16, api на :8080, worker). Проверка: `GET /health` → 200, если база доступна, иначе 503. Тесты: `cd backend && go test ./...`.
 - **Срез 0 (05.11):** миграции накатываются при старте api; контент — `docker compose exec api /app/api seed` (YAML в `backend/migrations/seed/`, библиотека `gopkg.in/yaml.v3`). Сервис `collector` — в профиле `tools`: `docker compose run --rm collector load-superjob --profession qa-manual`, затем `match-skills`, `calc-weights`; тесты — `docker compose run --rm --entrypoint pytest collector`. Демо-страница — `http://localhost:8080/demo/` (только `APP_ENV=local`). В Git Bash перед `docker compose exec ... /app/...` нужен `MSYS_NO_PATHCONV=1`.
 
@@ -139,7 +140,6 @@ docs/      документация (см. ниже)
 - Хостинг, платёжный сервис, почтовый сервис.
 - Юрлицо для приёма платежей (самозанятый / ИП / ООО).
 - Список 10 профессий: первые 3 решены (QA, Python, Java), остальные 7 выбирает Рустам.
-- Нет ли у проекта удалённого репозитория (GitHub/GitVerse)? Если `Code/` не git-репозиторий — `git init` и спросить Юрия про удалённый.
 - Тариф на 3 месяца — пока нет.
 
 ## Документация

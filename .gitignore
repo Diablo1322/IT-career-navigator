@@ -8,3 +8,7 @@ frontend/dist/
 __pycache__/
 .pytest_cache/
 *.egg-info/
+collector/build/
+
+# Клон общего репозитория (kayeros/IT-career-navigator), см. scripts/sync_full_code.py
+/full_code/

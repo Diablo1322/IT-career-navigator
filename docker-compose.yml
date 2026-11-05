@@ -1,5 +1,5 @@
 # Локальное окружение: PostgreSQL 16, api и worker.
-# Запуск: docker compose up --build   (перед этим: cp .env.example .env)
+# Запуск: docker compose up --build   (.env необязателен: без него берутся значения по умолчанию)
 name: careernav
 
 services:
@@ -22,7 +22,9 @@ services:
   api:
     build: ./backend
     command: ["/app/api"]
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-careernav}:${POSTGRES_PASSWORD:-careernav}@db:5432/${POSTGRES_DB:-careernav}?sslmode=disable
     ports:
@@ -39,7 +41,9 @@ services:
   worker:
     build: ./backend
     command: ["/app/worker"]
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-careernav}:${POSTGRES_PASSWORD:-careernav}@db:5432/${POSTGRES_DB:-careernav}?sslmode=disable
     depends_on:
@@ -51,7 +55,9 @@ services:
   collector:
     build: ./collector
     profiles: ["tools"]
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-careernav}:${POSTGRES_PASSWORD:-careernav}@db:5432/${POSTGRES_DB:-careernav}
     depends_on:
