@@ -18,6 +18,7 @@ import (
 	"careernav/internal/config"
 	"careernav/internal/content"
 	"careernav/internal/db"
+	"careernav/internal/demo"
 	"careernav/internal/httpapi"
 	"careernav/internal/logger"
 	"careernav/internal/match"
@@ -107,10 +108,15 @@ func newRouter(cfg config.Config, log *slog.Logger, pool *pgxpool.Pool) http.Han
 	progressHandler := progress.NewHandler(pool, log)
 	matchHandler := match.NewHandler(pool, log)
 
-	return httpapi.NewRouter(httpapi.Options{
+	opts := httpapi.Options{
 		Log:        log,
 		DB:         pool,
 		Middleware: []gin.HandlerFunc{authHandler.Middleware},
 		Modules:    []httpapi.Module{authHandler, contentHandler, progressHandler, matchHandler},
-	})
+	}
+	// Временная демо-страница — только на машине разработчика.
+	if cfg.IsLocal() {
+		opts.Extra = demo.Mount
+	}
+	return httpapi.NewRouter(opts)
 }
