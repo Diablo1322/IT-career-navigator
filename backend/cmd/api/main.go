@@ -20,6 +20,7 @@ import (
 	"careernav/internal/db"
 	"careernav/internal/httpapi"
 	"careernav/internal/logger"
+	"careernav/internal/match"
 	"careernav/internal/progress"
 	"careernav/migrations"
 )
@@ -104,11 +105,12 @@ func newRouter(cfg config.Config, log *slog.Logger, pool *pgxpool.Pool) http.Han
 	authHandler := auth.NewHandler(auth.NewService(pool, log), log, !cfg.IsLocal())
 	contentHandler := content.NewHandler(content.NewCatalog(pool), log)
 	progressHandler := progress.NewHandler(pool, log)
+	matchHandler := match.NewHandler(pool, log)
 
 	return httpapi.NewRouter(httpapi.Options{
 		Log:        log,
 		DB:         pool,
 		Middleware: []gin.HandlerFunc{authHandler.Middleware},
-		Modules:    []httpapi.Module{authHandler, contentHandler, progressHandler},
+		Modules:    []httpapi.Module{authHandler, contentHandler, progressHandler, matchHandler},
 	})
 }
