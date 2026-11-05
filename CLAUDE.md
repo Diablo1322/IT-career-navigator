@@ -52,6 +52,7 @@
 - **Почта:** сервис не выбран; на этапе 1 письма пишем в лог.
 - **Бэкенд, детали (21.10):** модуль `careernav` в `backend/`; драйвер БД — pgx v5 (`pgxpool`); журнал — стандартный `log/slog` (текст локально, JSON на серверах); конфиг — переменные окружения (`internal/config`), шаблон — `.env.example`, сам `.env` не коммитим.
 - **Локальный запуск:** `cp .env.example .env`, затем `docker compose up --build` (PostgreSQL 16, api на :8080, worker). Проверка: `GET /health` → 200, если база доступна, иначе 503. Тесты: `cd backend && go test ./...`.
+- **Срез 0 (05.11):** миграции накатываются при старте api; контент — `docker compose exec api /app/api seed` (YAML в `backend/migrations/seed/`, библиотека `gopkg.in/yaml.v3`). Сервис `collector` — в профиле `tools`: `docker compose run --rm collector load-superjob --profession qa-manual`, затем `match-skills`, `calc-weights`; тесты — `docker compose run --rm --entrypoint pytest collector`. Демо-страница — `http://localhost:8080/demo/` (только `APP_ENV=local`). В Git Bash перед `docker compose exec ... /app/...` нужен `MSYS_NO_PATHCONV=1`.
 
 Предлагаемая структура репозитория (не утверждена, можно менять):
 
