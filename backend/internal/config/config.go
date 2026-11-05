@@ -19,17 +19,14 @@ type Config struct {
 	DatabaseURL string
 	// ShutdownTimeout — сколько ждать завершения запросов при остановке.
 	ShutdownTimeout time.Duration
-	// SuperJobAPIKey — ключ SuperJob API (нужен воркеру с этапа загрузки вакансий).
-	SuperJobAPIKey string
 }
 
 // Load собирает конфиг из окружения и проверяет обязательные поля.
 func Load() (Config, error) {
 	cfg := Config{
-		Env:            getEnv("APP_ENV", "local"),
-		HTTPAddr:       getEnv("HTTP_ADDR", ":8080"),
-		DatabaseURL:    os.Getenv("DATABASE_URL"),
-		SuperJobAPIKey: os.Getenv("SUPERJOB_API_KEY"),
+		Env:         getEnv("APP_ENV", "local"),
+		HTTPAddr:    getEnv("HTTP_ADDR", ":8080"),
+		DatabaseURL: os.Getenv("DATABASE_URL"),
 	}
 
 	timeout, err := time.ParseDuration(getEnv("SHUTDOWN_TIMEOUT", "10s"))

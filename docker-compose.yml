@@ -46,5 +46,17 @@ services:
       db:
         condition: service_healthy
 
+  # Сервис аналитики (Python). Пока запускается вручную, расписание — в срезе 1:
+  #   docker compose run --rm collector load-superjob --profession qa-manual
+  collector:
+    build: ./collector
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-careernav}:${POSTGRES_PASSWORD:-careernav}@db:5432/${POSTGRES_DB:-careernav}
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
