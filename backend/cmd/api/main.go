@@ -101,11 +101,12 @@ func run() error {
 // newRouter собирает модули API.
 func newRouter(cfg config.Config, log *slog.Logger, pool *pgxpool.Pool) http.Handler {
 	authHandler := auth.NewHandler(auth.NewService(pool, log), log, !cfg.IsLocal())
+	contentHandler := content.NewHandler(content.NewCatalog(pool), log)
 
 	return httpapi.NewRouter(httpapi.Options{
 		Log:        log,
 		DB:         pool,
 		Middleware: []gin.HandlerFunc{authHandler.Middleware},
-		Modules:    []httpapi.Module{authHandler},
+		Modules:    []httpapi.Module{authHandler, contentHandler},
 	})
 }
