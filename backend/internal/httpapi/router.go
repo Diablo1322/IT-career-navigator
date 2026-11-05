@@ -15,13 +15,38 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
+// Module — модуль API, который вешает свои маршруты на группу /api/v1.
+type Module interface {
+	Register(api *gin.RouterGroup)
+}
+
+// Options — зависимости роутера.
+type Options struct {
+	Log *slog.Logger
+	DB  Pinger
+	// Middleware выполняются для всех запросов /api/v1 (например, определение пользователя по cookie).
+	Middleware []gin.HandlerFunc
+	Modules    []Module
+	// Extra — дополнительные маршруты вне /api/v1 (демо-страница).
+	Extra func(r *gin.Engine)
+}
+
 // NewRouter возвращает роутер с общими middleware и служебными маршрутами.
-func NewRouter(log *slog.Logger, db Pinger) *gin.Engine {
+func NewRouter(opts Options) *gin.Engine {
 	r := gin.New()
-	r.Use(gin.Recovery(), requestLogger(log))
+	// Не доверяем X-Forwarded-For: IP клиента берём из соединения. Настроить при выкладке за прокси.
+	_ = r.SetTrustedProxies(nil)
+	r.Use(gin.Recovery(), requestLogger(opts.Log))
 
-	r.GET("/health", healthHandler(db))
+	r.GET("/health", healthHandler(opts.DB))
 
+	api := r.Group("/api/v1", opts.Middleware...)
+	for _, m := range opts.Modules {
+		m.Register(api)
+	}
+	if opts.Extra != nil {
+		opts.Extra(r)
+	}
 	return r
 }
 

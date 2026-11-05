@@ -12,7 +12,9 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 
+	"careernav/internal/auth"
 	"careernav/internal/config"
 	"careernav/internal/content"
 	"careernav/internal/db"
@@ -72,7 +74,7 @@ func run() error {
 
 	srv := &http.Server{
 		Addr:    cfg.HTTPAddr,
-		Handler: httpapi.NewRouter(log, pool),
+		Handler: newRouter(cfg, log, pool),
 	}
 
 	errCh := make(chan error, 1)
@@ -94,4 +96,16 @@ func run() error {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
 	defer cancel()
 	return srv.Shutdown(shutdownCtx)
+}
+
+// newRouter собирает модули API.
+func newRouter(cfg config.Config, log *slog.Logger, pool *pgxpool.Pool) http.Handler {
+	authHandler := auth.NewHandler(auth.NewService(pool, log), log, !cfg.IsLocal())
+
+	return httpapi.NewRouter(httpapi.Options{
+		Log:        log,
+		DB:         pool,
+		Middleware: []gin.HandlerFunc{authHandler.Middleware},
+		Modules:    []httpapi.Module{authHandler},
+	})
 }

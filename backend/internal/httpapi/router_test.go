@@ -30,7 +30,7 @@ func TestHealth(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			r := NewRouter(log, tc.db)
+			r := NewRouter(Options{Log: log, DB: tc.db})
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/health", nil))
 			if w.Code != tc.want {
