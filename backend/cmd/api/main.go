@@ -14,9 +14,11 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"careernav/internal/config"
+	"careernav/internal/content"
 	"careernav/internal/db"
 	"careernav/internal/httpapi"
 	"careernav/internal/logger"
+	"careernav/migrations"
 )
 
 func main() {
@@ -52,6 +54,16 @@ func run() error {
 		switch os.Args[1] {
 		case "migrate":
 			log.Info("миграции применены")
+			return nil
+		case "seed":
+			data, err := content.LoadSeed(migrations.Seed, "seed")
+			if err != nil {
+				return err
+			}
+			if err := content.ApplySeed(ctx, pool, data); err != nil {
+				return err
+			}
+			log.Info("seed применён", "professions", len(data.Professions), "topics", len(data.Topics), "skills", len(data.Skills))
 			return nil
 		default:
 			return fmt.Errorf("неизвестная команда %q", os.Args[1])
