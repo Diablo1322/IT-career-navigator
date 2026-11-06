@@ -1,0 +1,6 @@
+/* Дополнения к стилям прототипа для React-версии. Классы прототипа — в prototype.css. */
+body{margin:0}
+/* Карточка «скоро» — неактивная кнопка, но выглядит как в прототипе. */
+.pcard:disabled{color:inherit;font:inherit}
+/* Ссылки-темы под недостающим навыком. */
+.skill .btn.link{white-space:normal;text-align:left}
