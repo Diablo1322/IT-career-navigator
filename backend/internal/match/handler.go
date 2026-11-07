@@ -39,12 +39,24 @@ func (h *Handler) calc(c *gin.Context) (*Calc, bool) {
 			return calc, true
 		}
 	}
-	if errors.Is(err, ErrNotFound) {
-		httpx.NotFound(c)
-	} else {
+	if !RespondProfessionError(c, err) {
 		httpx.Internal(c, h.log, err)
 	}
 	return nil, false
+}
+
+// RespondProfessionError отвечает 404 на ошибки поиска профессии и сообщает, обработана ли ошибка.
+func RespondProfessionError(c *gin.Context, err error) bool {
+	switch {
+	case errors.Is(err, ErrNotAvailable):
+		httpx.Error(c, http.StatusNotFound, "profession_not_available",
+			"Профессия скоро появится — пока можно подписаться на запуск")
+	case errors.Is(err, ErrNotFound):
+		httpx.NotFound(c)
+	default:
+		return false
+	}
+	return true
 }
 
 func (h *Handler) match(c *gin.Context) {

@@ -77,9 +77,10 @@ func (h *Handler) Register(api *gin.RouterGroup) {
 }
 
 func (h *Handler) fail(c *gin.Context, err error) {
+	if match.RespondProfessionError(c, err) {
+		return
+	}
 	switch {
-	case errors.Is(err, match.ErrNotFound):
-		httpx.NotFound(c)
 	case errors.Is(err, errNoPlan):
 		httpx.Error(c, http.StatusNotFound, "not_found", "Плана пока нет — постройте его")
 	default:

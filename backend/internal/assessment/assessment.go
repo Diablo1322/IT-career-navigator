@@ -104,8 +104,11 @@ func (h *Handler) Register(api *gin.RouterGroup) {
 
 func (h *Handler) fail(c *gin.Context, err error) {
 	var soon tooSoonError
+	if match.RespondProfessionError(c, err) {
+		return
+	}
 	switch {
-	case errors.Is(err, errNotFound), errors.Is(err, match.ErrNotFound):
+	case errors.Is(err, errNotFound):
 		httpx.NotFound(c)
 	case errors.Is(err, errCompleted):
 		httpx.Error(c, http.StatusConflict, "completed", "Оценка уже завершена. Новую можно начать через 7 дней после прошлой.")

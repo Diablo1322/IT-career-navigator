@@ -74,7 +74,8 @@ func run() error {
 			if err := content.ApplySeed(ctx, pool, data); err != nil {
 				return err
 			}
-			log.Info("seed применён", "professions", len(data.Professions), "topics", len(data.Topics), "skills", len(data.Skills))
+			log.Info("seed применён", "professions", len(data.Professions), "soon", len(data.SoonProfessions),
+				"topics", len(data.Topics), "skills", len(data.Skills))
 			return nil
 		case "create-admin":
 			if len(os.Args) < 3 {

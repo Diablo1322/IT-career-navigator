@@ -4,6 +4,7 @@ package content
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"path"
@@ -26,6 +27,20 @@ type SeedData struct {
 	Topics      []seedTopic
 	Professions []seedProfession
 	Questions   []seedQuestion
+	// SoonProfessions — профессии «скоро» из soon/professions.yaml: только карточка в каталоге, без контента.
+	SoonProfessions []seedSoonProfession
+}
+
+// soonFile — список профессий со статусом «скоро». Когда профессию наполняют, её переносят
+// в отдельный файл seed/<slug>.yaml (тот же slug) и удаляют отсюда.
+const soonFile = "soon/professions.yaml"
+
+type seedSoonProfession struct {
+	Slug        string `yaml:"slug"`
+	Title       string `yaml:"title"`
+	Description string `yaml:"description"`
+	ForWhom     string `yaml:"for_whom"`
+	SortOrder   int    `yaml:"sort_order"`
 }
 
 // seedQuestion — проверочный вопрос для ответа «уверенно» в оценке навыков.
@@ -150,6 +165,20 @@ func LoadSeed(fsys fs.FS, dir string) (*SeedData, error) {
 		return data.Professions[i].SortOrder < data.Professions[j].SortOrder
 	})
 
+	switch raw, err := fs.ReadFile(fsys, path.Join(dir, soonFile)); {
+	case errors.Is(err, fs.ErrNotExist):
+	case err != nil:
+		return nil, err
+	default:
+		var f struct {
+			Professions []seedSoonProfession `yaml:"professions"`
+		}
+		if err := yaml.Unmarshal(raw, &f); err != nil {
+			return nil, fmt.Errorf("%s: %w", soonFile, err)
+		}
+		data.SoonProfessions = f.Professions
+	}
+
 	if err := data.validate(); err != nil {
 		return nil, err
 	}
@@ -193,6 +222,27 @@ func (d *SeedData) validate() error {
 			if !skills[s] {
 				return fmt.Errorf("тема %q: нет навыка %q в skills.yaml", t.Slug, s)
 			}
+		}
+	}
+
+	slugs := map[string]bool{}
+	for _, p := range d.Professions {
+		if slugs[p.Slug] {
+			return fmt.Errorf("профессия %q объявлена дважды", p.Slug)
+		}
+		slugs[p.Slug] = true
+	}
+	// «Скоро»: только уникальный slug (в том числе среди доступных) и название; контент не нужен.
+	for _, p := range d.SoonProfessions {
+		if strings.TrimSpace(p.Slug) == "" {
+			return fmt.Errorf("%s: у профессии %q нет slug", soonFile, p.Title)
+		}
+		if slugs[p.Slug] {
+			return fmt.Errorf("%s: профессия %q уже есть — уберите её из списка «скоро»", soonFile, p.Slug)
+		}
+		slugs[p.Slug] = true
+		if strings.TrimSpace(p.Title) == "" {
+			return fmt.Errorf("%s: у профессии %q нет названия", soonFile, p.Slug)
 		}
 	}
 
@@ -270,6 +320,18 @@ func ApplySeed(ctx context.Context, pool *pgxpool.Pool, d *SeedData) error {
 		for _, p := range d.Professions {
 			if err := applyProfession(ctx, tx, p, skillIDs, topicIDs); err != nil {
 				return fmt.Errorf("профессия %q: %w", p.Slug, err)
+			}
+		}
+		for _, p := range d.SoonProfessions {
+			// Статус ставим только новой профессии: уже доступную (или скрытую в админке) не трогаем.
+			if _, err := tx.Exec(ctx, `
+				INSERT INTO professions (slug, title, description, for_whom, status, sort_order)
+				VALUES ($1, $2, $3, $4, 'soon', $5)
+				ON CONFLICT (slug) DO UPDATE
+				SET title = EXCLUDED.title, description = EXCLUDED.description, for_whom = EXCLUDED.for_whom,
+				    sort_order = EXCLUDED.sort_order, updated_at = now()`,
+				p.Slug, p.Title, nullIfEmpty(p.Description), nullIfEmpty(p.ForWhom), p.SortOrder); err != nil {
+				return fmt.Errorf("профессия «скоро» %q: %w", p.Slug, err)
 			}
 		}
 		return applyQuestions(ctx, tx, d.Questions, skillIDs)
@@ -402,4 +464,11 @@ func applyQuestions(ctx context.Context, tx pgx.Tx, qs []seedQuestion, skillIDs 
 		}
 	}
 	return nil
+}
+
+func nullIfEmpty(s string) any {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return s
 }

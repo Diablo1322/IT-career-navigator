@@ -9,8 +9,12 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-// ErrNotFound — профессии нет или она скрыта.
-var ErrNotFound = errors.New("профессия не найдена")
+var (
+	// ErrNotFound — профессии нет или она скрыта.
+	ErrNotFound = errors.New("профессия не найдена")
+	// ErrNotAvailable — профессия «скоро»: карты, оценки, отчёта и плана для неё ещё нет.
+	ErrNotAvailable = errors.New("профессия скоро появится")
+)
 
 // Querier — общее у пула и транзакции.
 type Querier interface {
@@ -27,12 +31,17 @@ type Calc struct {
 	Skills       []KeySkill
 }
 
-// ProfessionID находит видимую профессию по slug.
+// ProfessionID находит доступную профессию по slug. Для профессии «скоро» — ErrNotAvailable.
 func ProfessionID(ctx context.Context, q Querier, slug string) (int64, error) {
 	var id int64
-	err := q.QueryRow(ctx, `SELECT id FROM professions WHERE slug = $1 AND status IN ('available', 'soon')`, slug).Scan(&id)
+	var status string
+	err := q.QueryRow(ctx, `SELECT id, status FROM professions WHERE slug = $1 AND status IN ('available', 'soon')`, slug).
+		Scan(&id, &status)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, ErrNotFound
+	}
+	if err == nil && status == "soon" {
+		return 0, ErrNotAvailable
 	}
 	return id, err
 }

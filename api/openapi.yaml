@@ -244,6 +244,9 @@ paths:
       tags: [catalog]
       summary: Карточка профессии с roadmap
       description: |
+        Профессия со статусом `soon` тоже отдаётся (для страницы «Скоро» и «Сообщить о запуске»),
+        но без контента: `blocks` — пустой массив.
+
         Блоки → темы → материалы (только одобренные). Для вошедшего пользователя у тем заполнено `studied`,
         а в `progress` — сколько тем изучено. Для гостя `studied` = false, `progress` = null.
       operationId: getProfession
@@ -310,7 +313,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Match'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-        '404': {$ref: '#/components/responses/NotFound'}
+        '404': {$ref: '#/components/responses/ProfessionNotFound'}
 
   /me/profile:
     get:
@@ -370,7 +373,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Assessment'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-        '404': {$ref: '#/components/responses/NotFound'}
+        '404': {$ref: '#/components/responses/ProfessionNotFound'}
         '409':
           description: 'Повторная оценка раньше чем через 7 дней (`too_soon`); в message — когда можно'
           content:
@@ -474,7 +477,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Report'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-        '404': {$ref: '#/components/responses/NotFound'}
+        '404': {$ref: '#/components/responses/ProfessionNotFound'}
 
   /professions/{slug}/plan:
     get:
@@ -493,7 +496,7 @@ paths:
               schema: {$ref: '#/components/schemas/Plan'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '404':
-          description: 'Нет профессии или плана ещё не строили (`not_found`)'
+          description: 'Нет профессии или плана ещё не строили (`not_found`); профессия «скоро» (`profession_not_available`)'
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
@@ -529,7 +532,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-        '404': {$ref: '#/components/responses/NotFound'}
+        '404': {$ref: '#/components/responses/ProfessionNotFound'}
 
   /waitlist:
     post:
@@ -1182,6 +1185,17 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
+    ProfessionNotFound:
+      description: |
+        `not_found` — профессии нет или она скрыта;
+        `profession_not_available` — профессия «скоро»: карты, оценки, отчёта и плана для неё пока нет.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example:
+            error:
+              code: profession_not_available
+              message: Профессия скоро появится — пока можно подписаться на запуск
     NotFound:
       description: 'Не найдено (`not_found`)'
       content:
@@ -1200,7 +1214,7 @@ components:
             code:
               type: string
               description: Машинный код ошибки
-              examples: [validation_error, too_soon, completed, email_taken, invalid_credentials, too_many_attempts, too_many_requests, invalid_token, already_verified, unauthorized, forbidden, not_found, conflict, internal]
+              examples: [validation_error, too_soon, completed, email_taken, invalid_credentials, too_many_attempts, too_many_requests, invalid_token, already_verified, unauthorized, forbidden, not_found, profession_not_available, conflict, internal]
             message:
               type: string
               description: Текст для пользователя

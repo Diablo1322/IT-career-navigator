@@ -101,6 +101,7 @@ server: { port: 5173, proxy: { "/api": { target: "http://localhost:8080", change
 | 401 | `unauthorized` | не вошёл / сессия истекла | показать вход |
 | 403 | `forbidden` | нет роли admin | «Нет доступа» |
 | 404 | `not_found` | нет профессии, темы, оценки, плана | страница «Не найдено» / пустое состояние |
+| 404 | `profession_not_available` | профессия «скоро»: соответствие, отчёт, оценка, план | экран «Скоро» с «Сообщить о запуске», не ошибка |
 | 409 | `email_taken` | почта уже зарегистрирована | ошибка у поля «Почта» + ссылка «Войти» |
 | 409 | `already_verified` | почта уже подтверждена | убрать баннер |
 | 409 | `too_soon` | повторная оценка раньше 7 дней | `message` содержит дату, когда можно |
@@ -142,7 +143,7 @@ server: { port: 5173, proxy: { "/api": { target: "http://localhost:8080", change
 
 | Метод и путь | Вход | Ответ |
 |---|---|---|
-| `GET /professions` | нет | `200 {items: ProfessionSummary[]}` |
+| `GET /professions` | нет | `200 {items: ProfessionSummary[]}` — 13 профессий: 3 `available`, 10 `soon` |
 | `GET /professions/{slug}` | нет* | `200` блоки → темы → материалы, `progress` (null для гостя); `404` |
 | `PUT /topics/{id}/progress` / `DELETE` | да | `204` |
 | `POST /waitlist` `{profession_slug, email?}` | нет | `204` («Сообщить о запуске»; вошедшему почту можно не передавать) |
