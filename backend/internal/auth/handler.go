@@ -80,6 +80,15 @@ func RequireUser(c *gin.Context) {
 	c.Next()
 }
 
+// RequireAdmin пускает только роль admin (ставить после RequireUser).
+func RequireAdmin(c *gin.Context) {
+	if u := CurrentUser(c); u == nil || u.Role != "admin" {
+		httpx.Error(c, http.StatusForbidden, "forbidden", "Нужны права администратора")
+		return
+	}
+	c.Next()
+}
+
 type registerRequest struct {
 	Email            string `json:"email"`
 	Password         string `json:"password"`
