@@ -21,6 +21,7 @@ import (
 	"careernav/internal/demo"
 	"careernav/internal/httpapi"
 	"careernav/internal/logger"
+	"careernav/internal/mail"
 	"careernav/internal/match"
 	"careernav/internal/progress"
 	"careernav/migrations"
@@ -103,7 +104,8 @@ func run() error {
 
 // newRouter собирает модули API.
 func newRouter(cfg config.Config, log *slog.Logger, pool *pgxpool.Pool) http.Handler {
-	authHandler := auth.NewHandler(auth.NewService(pool, log), log, !cfg.IsLocal())
+	mailer := mail.LogMailer{Log: log}
+	authHandler := auth.NewHandler(auth.NewService(pool, log, mailer, cfg.PublicURL), log, !cfg.IsLocal())
 	contentHandler := content.NewHandler(content.NewCatalog(pool), log)
 	progressHandler := progress.NewHandler(pool, log)
 	matchHandler := match.NewHandler(pool, log)

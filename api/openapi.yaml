@@ -100,6 +100,103 @@ paths:
         '204':
           description: Сессия закрыта
 
+  /auth/verify-email:
+    post:
+      tags: [auth]
+      summary: Подтвердить почту по ссылке из письма
+      description: |
+        Токен приходит в ссылке `/verify-email?token=...` (пока письма пишутся в журнал сервера).
+        Токен одноразовый, действует 48 часов.
+      operationId: verifyEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/TokenRequest'}
+      responses:
+        '204':
+          description: Почта подтверждена
+        '400':
+          description: 'Ссылка неверная, устарела или уже использована (`invalid_token`)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+  /auth/verify-email/resend:
+    post:
+      tags: [auth]
+      summary: Отправить письмо подтверждения ещё раз
+      description: Не чаще раза в 60 секунд. Предыдущие ссылки перестают действовать.
+      operationId: resendVerification
+      security: [{session: []}]
+      responses:
+        '204':
+          description: Письмо отправлено
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '409':
+          description: 'Почта уже подтверждена (`already_verified`)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: 'Слишком часто (`too_many_requests`), заголовок Retry-After — через сколько секунд можно снова'
+          headers:
+            Retry-After:
+              schema: {type: integer}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
+  /auth/password-reset:
+    post:
+      tags: [auth]
+      summary: Запросить ссылку для смены пароля
+      description: |
+        Всегда отвечает 204, даже если почты нет в базе: так нельзя узнать, зарегистрирован ли человек.
+        Ссылка `/reset-password?token=...` действует 1 час; на одну почту — не чаще раза в 60 секунд.
+      operationId: requestPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: string, format: email}
+      responses:
+        '204':
+          description: Если почта зарегистрирована, письмо отправлено
+        '400': {$ref: '#/components/responses/ValidationError'}
+
+  /auth/password-reset/confirm:
+    post:
+      tags: [auth]
+      summary: Задать новый пароль по ссылке из письма
+      description: Токен одноразовый. После смены пароля все сессии пользователя закрываются — нужно войти заново.
+      operationId: confirmPasswordReset
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: {type: string}
+                password: {type: string, minLength: 8, maxLength: 128}
+      responses:
+        '204':
+          description: Пароль изменён
+        '400':
+          description: 'Ошибка в пароле (`validation_error`) или ссылка неверная / устарела (`invalid_token`)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+
   /me:
     get:
       tags: [auth]
@@ -260,7 +357,7 @@ components:
             code:
               type: string
               description: Машинный код ошибки
-              examples: [validation_error, email_taken, invalid_credentials, too_many_attempts, unauthorized, not_found, internal]
+              examples: [validation_error, email_taken, invalid_credentials, too_many_attempts, too_many_requests, invalid_token, already_verified, unauthorized, forbidden, not_found, conflict, internal]
             message:
               type: string
               description: Текст для пользователя
@@ -283,6 +380,12 @@ components:
           type: boolean
           default: false
           description: Согласие на рассылки (необязательное)
+
+    TokenRequest:
+      type: object
+      required: [token]
+      properties:
+        token: {type: string, description: Токен из ссылки в письме}
 
     LoginRequest:
       type: object
